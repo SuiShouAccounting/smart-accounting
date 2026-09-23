@@ -1,0 +1,20 @@
+# Python 字节码缓存
+__pycache__/
+*.pyc
+*.pyo
+
+# 本地环境元数据
+.DS_Store
+Thumbs.db
+
+# IDE 配置
+.vscode/
+.idea/
+config/_cache.json
+
+# 注意（公开版）：config/books.json 与 config/sui_base_tag.json 以空模板入库（不在此忽略），
+# 保证"skill 目录禁止创建文件"的平台也能持久化缓存；公开仓库只接受发布流程推送，无脏数据入库风险。
+# 内部仓库的 .gitignore 保留这两行的忽略规则（防开发期误提交真实数据），两者刻意不同。
+
+# 瞬态参数文件（call_gateway.py 传参用，任何工作目录都可能出现）
+sui_cache.json
