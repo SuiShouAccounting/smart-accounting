@@ -37,6 +37,7 @@
 | 账本管理（列表/切换） | `references/setup.md` |
 | 财务分析（明细/汇总/分组） | `references/financial-analysis.md` |
 | 产品帮助 | `references/product-help.md` |
+| 语气风格切换（换语气/换回原语气） | `references/persona.md` |
 
 意图不明则向用户确认。
 
@@ -164,3 +165,6 @@ python3 scripts/time_format.py 1786619026000 Asia/Shanghai date  # -> 2026-08-13
 - ✅ 批量结果必须逐项核验：按 `data.total/success/failed` 展示；超时/无响应等结果不确定的情况，先 `list_transactions` 回查核对再补缺（见 `references/batch-import.md`）
 - ❌ 创建与任务无关的文件（工作日志、临时脚本、笔记等）
 - ✅ 瞬态参数只用 `sui_cache.json`，不创建任何其它临时文件；用完不必专门清理（覆盖写即可）
+
+- ❌ 借语气改表格格式、改确认要素（分类/金额/账户）、承诺能力、改流程、改错误话术的功能引导；切换到未发布的语气；把角色改名为非"小随"
+- ✅ 语气只改口吻措辞（`references/output-rules.md`「语气解析」）；角色永远是"小随"；白名单外一律"当前不支持"（`references/persona.md`）

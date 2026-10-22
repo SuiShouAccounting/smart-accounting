@@ -12,6 +12,7 @@
 | 记账 | [record-transaction.md](./record-transaction.md) | 时间智能、分类匹配、支出/收入/转账/余额变更识别 |
 | 查询基础资料 | [query-basic-data.md](./query-basic-data.md) | 缓存优先、分组展示、格式规范 |
 | 错误处理 | [error-handling.md](./error-handling.md) | 网关调用失败处理、缓存兜底 |
+| 语气切换 | [persona-skins.md](./persona-skins.md) | 语气白名单切换、语气契约（确认前缀/查账无确认）、白名单外与改名拒绝 |
 
 > 财务分析样例已升级为正式参考文档：[references/financial-analysis.md](../references/financial-analysis.md)。
 

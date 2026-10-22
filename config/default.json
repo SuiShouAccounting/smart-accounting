@@ -1,7 +1,8 @@
 {
-  "APIDomain": "https://yun.feidee.net/cab-skill-ws/skill-gateway",
+  "APIDomain": "https://yun.feidee.net/skill-gateway",
   "Authorization": "",
-  "SkillVersion": "1.0.0",
+  "SkillVersion": "1.0.1",
+  "Persona": "default",
   "DefaultBook": {
     "id": "",
     "type": ""

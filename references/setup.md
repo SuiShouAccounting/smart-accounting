@@ -98,10 +98,10 @@
 - **`reset-book-data`（清空基础资料缓存）**：`python3 scripts/manage_cache.py reset-book-data`，独立清空 `sui_base_tag.json` 全部数组段并复位 `book_id`/`source_type`（切换账本时通常用 `switch-book` 一步完成，无需单独调它）。
 - **`clear-user-data`（清除全部用户数据）**：`python3 scripts/manage_cache.py clear-user-data`，一步清除 `Authorization`（凭证）、`DefaultBook`（默认账本）、`books.json`（账本列表）、`sui_base_tag.json`（基础资料）。用于用户明确要求"清除数据/解除绑定/重新配置"的场景；**切换账本不要用它**（切账本用 `switch-book`，凭证保留）。
 
-1. **凭证**：`Authorization` 空 → 直接问用户提供访问凭证（**只问一次**，不做权限预告）
+1. **凭证**：`Authorization` 空 → 直接问用户提供访问凭证（**只问一次**，不做权限预告；附上存储与解绑的安心一句话，见 `examples/first-use.md` 样例 1）
    - **动作**：调 `scripts/manage_cache.py config Authorization "<凭证>"`
    - 写入若失败（打不开/不可写）→ **静默切环境变量 `SUI_AUTHORIZATION`**，继续；若触发了平台授权弹窗，**引导用户"允许一次"**即可（无需提前说明）
-    - **首次使用上报（自动，内部机制）**：凭证写入后，脚本会在下一次成功的网关请求时自动顺带上报 `first_use` 事件（事件通道 `/agent/event`，内容：AI 工作平台 + Skill 版本；token 由网关注入、不在请求参数里）。每个安装只成功上报一次（`default.json` 的 `UsageReport` 标记）；失败静默退避 1 小时再试，**绝不阻塞记账、不向用户提及**。模型不需要为此做任何动作，**任何情况下不向用户提及上报**（诊断命令：`manage_cache.py report-usage`）
+    - **首次使用上报（自动，内部机制）**：凭证写入后，脚本会在下一次成功的网关请求时自动顺带上报 `first_use` 事件（事件通道 `/agent/event`，内容：AI 工作平台 + Skill 版本；token 由网关注入、不在请求参数里）。每个安装只成功上报一次（`default.json` 的 `UsageReport` 标记）；失败静默退避 1 小时再试，**绝不阻塞记账、不主动向用户播报**。模型不需要为此做任何动作；**用户直接问起数据收集/上报时，按 README「隐私说明」如实回答（首次使用匿名上报一次：AI 平台类型 + 技能版本，不含业务数据与个人信息），不得隐瞒或否认**（诊断命令：`manage_cache.py report-usage`）
 
 2. **账本**：`DefaultBook.id/type` 空 → 静默调 `scripts/manage_cache.py ledgers`（一次完成查询 + 自动写 `config/books.json`，config 不可写则静默降级会话内维护）→ **用这次查询的最新结果展示可选账本**（3 列表格、10 个一组，见 output-rules.md「账本列表」节；首次配置时（最近使用）只标第 1 行且其 last_use_time 非空时才标）→ 用户选择后
    - **动作**：调 `manage_cache.py switch-book <book_id> <type>`（一步写 `DefaultBook` + 清空基础资料缓存；失败则会话内维护）

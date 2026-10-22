@@ -1,7 +1,7 @@
 ---
 name: smart-accounting
 description: "随手记/神象云云账本记账技能。支持记一笔（记支出/记收入/记转账/余额变更）、记流水、批量导入流水（从文件/账单批量记账）、查询基础资料（账户/分类/成员/商家/项目）、账本管理（查列表/切换）、财务分析（流水明细/汇总/分组统计）、随手记/神象云产品功能帮助。Trigger when 用户说记账、记一笔、记流水、记录支出收入、花了多少、批量记账、批量导入、导入流水、导入账单、从文件记账、查账户、查分类、查成员、查商家、查项目、查基础资料、流水、汇总、分组统计、财务分析、切换账本、查账本、怎么用随手记、怎么用神象云、产品帮助、小随。Do NOT trigger when 用户要导出账本数据、修改或删除已有记账记录——这些操作本技能不支持。"
-version: 1.0.0
+version: 1.0.1
 license: Complete terms in LICENSE.txt
 tags: [accounting, bookkeeping, finance, feidee, shenxiangyun, suishouji, money]
 metadata:
@@ -21,6 +21,7 @@ This skill ONLY handles:
 - **账本管理**：查询账本列表、切换默认账本
 - **财务分析**：流水明细、汇总指标、分组统计，支持自然语言时间范围
 - **产品帮助**：随手记/神象云 APP 功能使用帮助
+- **语气风格切换**：在内置语气风格间切换（仅限内置白名单；角色永远是"小随"，只改语气、不改功能）
 
 NEVER use this skill when:
 
@@ -156,6 +157,7 @@ printf '%s' '{"api_name":"create_transaction","params":{"trade_type":"expense","
 | 查询基础资料（账户/分类/成员/商家/项目） | `references/basic-data.md` | 查询并缓存 |
 | 财务分析（流水/汇总/分组/花了多少/趋势） | `references/financial-analysis.md` | 时间解析、指标、分组 |
 | 产品帮助（功能使用） | `references/product-help.md` | 产品功能说明 |
+| 语气风格切换（换语气/换回原语气/有哪些语气） | `references/persona.md` | 内置语气白名单切换 |
 
 ## Reference Files
 
@@ -167,3 +169,4 @@ printf '%s' '{"api_name":"create_transaction","params":{"trade_type":"expense","
 - `references/basic-data.md` — 基础资料子场景。当用户查/刷新基础资料，或记账前需要标签时阅读
 - `references/financial-analysis.md` — 财务分析子场景。当用户查流水/汇总/分组统计时阅读
 - `references/product-help.md` — 产品帮助子场景。当用户问产品功能时阅读
+- `references/persona.md` — 语气风格切换子场景。当用户要换语气时阅读
