@@ -14,16 +14,16 @@
 
 根据用户描述自动判断，并映射到 `trade_type` 参数：
 
-| 用户表述 | trade_type | 含义 |
-|---------|-----------|------|
-| "支出"、"花了"、"消费"、"买"、"付了"、"付款" | `expense` | 记支出 |
-| "收入"、"收到"、"赚了"、"工资"、"入账" | `income` | 记收入 |
-| "转账"、"转出"、"转入"、"转给" | `transfer` | 记转账 |
-| "余额变更"、"调余额"、"余额改成/调整为" | `balance_changed` | 调整账户余额到目标值 |
+| 用户表述                         | trade\_type       | 含义         |
+| ---------------------------- | ----------------- | ---------- |
+| "支出"、"花了"、"消费"、"买"、"付了"、"付款" | `expense`         | 记支出        |
+| "收入"、"收到"、"赚了"、"工资"、"入账"     | `income`          | 记收入        |
+| "转账"、"转出"、"转入"、"转给"          | `transfer`        | 记转账        |
+| "余额变更"、"调余额"、"余额改成/调整为"      | `balance_changed` | 调整账户余额到目标值 |
 
 如果用户没有明确说明，询问用户确认。
 
-## 调用网关记账（create_transaction）
+## 调用网关记账（create\_transaction）
 
 统一通过网关 `create_transaction` 完成。**首选瞬态参数文件（避免授权）**：第 1 步用 Write 工具把参数写入 `sui_cache.json`（当前工作目录 os.getcwd()，平台无关），第 2 步跑固定命令 `run`（命令串恒定；`biz_type`/`book_id` 缺省自动取默认账本，不必传）：
 
@@ -36,18 +36,23 @@ python3 scripts/call_gateway.py run
 # 备选：stdin 管道（macOS/Linux 用 printf；Windows PowerShell 用裸单引号字符串直接管道）
 ```
 
+> **执行注意**：记账命令**不要**长时间等待。若仍遇到长时间无输出（旧版本），优先怀疑**卡在等待标准输入**，**不是网关或授权问题**。**记账类严禁盲目重试**——结果不确定时先用 `list_transactions` 回查是否已入账，确认没有才补记。
+
+> **时间口径**：用户提到时间时通过 `time` 字段传入（自然语言或标准格式 `YYYY-MM-DD` / `YYYY-MM-DD HH:MM` / `YYYY-MM-DD~YYYY-MM-DD`，常见表达自动归一化）；**用户未提及时间时不传 `time`**（默认当前时刻，不要自行补充）。脚本报"时间无法转换为标准格式"且未提交时：换算成标准格式后重发；无法换算时用业务话术向用户确认具体日期（如"这笔是哪天的呀？"），**不得回退为"今天"**。
+
 `APIDomain` / `Authorization` / `SkillVersion` / `DefaultBook` 由脚本自动从 `config/default.json` 读取。**这些取值细节不展示给用户。**
 
 ### 各记账类型的参数
 
-| 记账类型 | trade_type | 必填参数 | 说明 |
-|---------|-----------|---------|------|
-| 支出 | `expense` | `from_amount`、`from_account_id`、`category_id` | 从某账户支出 |
-| 收入 | `income` | `to_amount`、`to_account_id`、`category_id` | 入某账户 |
-| 转账 | `transfer` | `from_amount`、`from_account_id`、`to_account_id` | 两侧账户；`to_amount` 不传则默认等于 `from_amount` |
-| 余额变更 | `balance_changed` | `to_amount`、`to_account_id` | `to_amount` 是**目标余额值**（不是增减金额） |
+| 记账类型 | trade\_type       | 必填参数                                            | 说明                                     |
+| ---- | ----------------- | ----------------------------------------------- | -------------------------------------- |
+| 支出   | `expense`         | `from_amount`、`from_account_id`、`category_id`   | 从某账户支出                                 |
+| 收入   | `income`          | `to_amount`、`to_account_id`、`category_id`       | 入某账户                                   |
+| 转账   | `transfer`        | `from_amount`、`from_account_id`、`to_account_id` | 两侧账户；`to_amount` 不传则默认等于 `from_amount` |
+| 余额变更 | `balance_changed` | `to_amount`、`to_account_id`                     | `to_amount` 是**目标余额值**（不是增减金额）         |
 
 **公共可选参数**（用户明确指定才带，不询问）：
+
 - `remark`：备注
 - `category_id`：分类 ID（支出/收入必填）
 - `member_id` / `merchant_id` / `project_id`：关联标签，用户未指定则**不带**
@@ -68,9 +73,11 @@ python3 scripts/call_gateway.py run
 ## 记账流程
 
 ### Phase 1: 判断记账类型
+
 按上文"记账类型判断"映射 `trade_type`；不明确则询问。
 
 ### Phase 2: 收集记账信息
+
 与用户对话，逐步收集。用户一次性提供完整信息时直接进入 Phase 3。
 
 - **必填**：金额、分类（支出/收入）、账户（账户按 Phase 3「默认账户规则」**自动填入**：用户指定了就按用户指定；完全没提时缓存有现金类账户就默认现金，不追问）
@@ -95,47 +102,45 @@ python3 scripts/call_gateway.py run
 - **商家/成员/项目**：用户描述中能语义对应到缓存里某一项（如"在超市买的"→商家"超市"、"给我儿子买的"→成员）→ 直接填入，**不问**；没提到 → 不填，不问
 
 **何时才向用户提问**（仅限以下情况）：
+
 1. 语义匹配不到任何基础资料条目——**分类**先试"其他"类兜底（见分类规则第 3 条），没有才问；账户/商家/成员没有兜底，直接问（如账户名在账本里不存在）
 2. 匹配到多个且差异实质（如"吃饭"同时高度匹配"中餐"和"晚餐"且无时间线索）——此时按 `references/output-rules.md` 表格格式列出候选让用户选，**一次只问一项**
 
-### Phase 4: 调用网关 create_transaction
+### Phase 4: 调用网关 create\_transaction
+
 按记账类型组装参数（见上表），发送请求。响应 `code==0` 时 `data` 含记账结果（`transaction_id`、`trade_type`、金额、账户、分类等）；否则按 `references/workflow.md` 失败处理。
 
 ### Phase 5: 展示结果
+
 - 成功：向用户展示摘要（金额、类型、账户、分类、备注），用业务语言，如"已记一笔支出：午餐 12.5 元"
 - 失败：按 `msg` 用业务话术说明并给建议
 - **重要**：`create_transaction` 记账接口遇超时等结果不确定情况**不得自动重试**（避免重复记账），失败时告知用户结果待确认
 
 ## 参数说明
 
-| 参数 | 是否必填 | 说明 |
-|------|---------|------|
-| `trade_type` | 是 | `expense`/`income`/`transfer`/`balance_changed` |
-| `from_amount` / `to_amount` | 按类型 | 金额（字符串）；转账可只传 from |
-| `from_account_id` / `to_account_id` | 按类型 | 账户 ID |
-| `category_id` | 支出/收入必填 | 分类 ID |
-| `remark` | 否 | 备注 |
-| `member_id` / `merchant_id` / `project_id` | 否 | 关联标签，用户未指定不带 |
+| 参数                                         | 是否必填    | 说明                                              |
+| ------------------------------------------ | ------- | ----------------------------------------------- |
+| `trade_type`                               | 是       | `expense`/`income`/`transfer`/`balance_changed` |
+| `from_amount` / `to_amount`                | 按类型     | 金额（字符串）；转账可只传 from                              |
+| `from_account_id` / `to_account_id`        | 按类型     | 账户 ID                                           |
+| `category_id`                              | 支出/收入必填 | 分类 ID                                           |
+| `remark`                                   | 否       | 备注                                              |
+| `member_id` / `merchant_id` / `project_id` | 否       | 关联标签，用户未指定不带                                    |
 
 ## 常见问题
 
 - ❌ 分类推断不出来、账本里有"其他支出"，还问"这笔记到哪个分类？"
 - ✅ 分类推断不出来时优先用账本的"其他"类分类（其他支出/其他收入），不问；连"其他"类都没有才问用户
-
 - ❌ 用户没要求、分类也推断不出来 → 自作主张新建"杂项/衣服"之类分类再记账
 - ✅ 不自动新建分类：语义推断 → "其他"类兜底 → 没有才问；用户明确要求新建时才建
-
 - ❌ 缓存里有"现金"账户、用户也没说账户，还问"用哪个账户付的？"
 - ✅ 用户没说账户且缓存有现金类账户 → 静默用现金直接记账，不问；只有无现金类账户且语境无线索时才问（表格列候选）
-
 - ❌ 让用户手动复制粘贴标签 ID
 - ✅ 让用户选择标签名称，自动映射为 ID
-
 - ❌ 记账前不检查基础资料缓存
 - ✅ 记账前确保基础资料缓存存在，否则自动触发查询
-
 - ❌ 记账遇超时自动重试（可能重复记账）
 - ✅ 记账结果不确定时不重试，告知用户结果待确认
-
 - ❌ 把网关地址、凭证、字段名暴露给用户
 - ✅ 只用业务语言说记账结果
+

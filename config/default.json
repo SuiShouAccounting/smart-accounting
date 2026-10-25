@@ -1,7 +1,7 @@
 {
   "APIDomain": "https://yun.feidee.net/skill-gateway",
   "Authorization": "",
-  "SkillVersion": "1.0.1",
+  "SkillVersion": "1.0.3",
   "Persona": "default",
   "DefaultBook": {
     "id": "",

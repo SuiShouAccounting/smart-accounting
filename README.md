@@ -6,14 +6,16 @@
 
 ## 安装
 
-需要 [Node.js](https://nodejs.org/)（用于 `npx`）：
+需要 [Node.js 22.20+](https://nodejs.org/)（用于 `npx`）：
 
 ```bash
 npx skills add SuiShouAccounting/smart-accounting -g   # 安装到你当前所在的 AI 工作平台
 ```
 
+- 未安装 Node.js 或版本低于 22.20：先到 [nodejs.org](https://nodejs.org/) 下载安装 22 LTS 或更高版本
 - `-g`：安装到用户目录（全局，所有项目可用）；去掉 `-g` 则安装到当前项目
 - 安装时如提示选择助手（agent），选择你正在使用的即可（支持 Claude Code、Cursor、Codex、OpenCode 等 80+ 款）
+- 提示"Node 版本不足"时：升级 Node 后重试；或用 `git clone` 把本仓库直接放进助手 skills 目录（纯文件即可用，无需安装工具）
 
 ## 开始使用
 

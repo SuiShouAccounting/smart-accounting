@@ -60,21 +60,12 @@ def _build_body(cfg, api_name, params):
 
 
 def _read_stdin_json():
-    try:
-        text = sys.stdin.read().strip()
-    except Exception:
-        text = ""
+    """读 stdin 兜底通道（有界读取，绝不挂起；优先级低于瞬态参数文件）。
+    """
+    text = common.read_stdin_bounded().strip()
     if not text:
         return {}
-    if text.startswith(u"﻿"):
-        text = text.lstrip(u"﻿")
-    try:
-        return json.loads(text)
-    except ValueError:
-        try:
-            return json.loads(text.decode("utf-8-sig"))
-        except Exception:
-            raise
+    return json.loads(text)
 
 
 def _read_cache_json():
@@ -89,19 +80,28 @@ def _read_cache_json():
     return {}
 
 
-def _dispatch(subcmd, stdin_json):
-    api_name = stdin_json.get("api_name", "")
+def _dispatch(subcmd, payload):
+    api_name = payload.get("api_name", "")
     if not api_name:
-        raise ValueError("缺少 api_name")
+        raise ValueError("缺少 api_name（请把参数写入当前工作目录的 sui_cache.json："
+                         "{\"api_name\":\"<接口名>\",\"params\":{...}} 后重试）")
     if subcmd == "query":
         if api_name.startswith(_FORBIDDEN_PREFIXES):
             raise ValueError("query 禁止操作类接口：%s（操作类请用 run）" % api_name)
         if api_name not in _QUERY_API_NAMES:
             raise ValueError("query 仅允许查询类接口，禁止：%s" % api_name)
-    params = dict(stdin_json.get("params") or {})
-    err = common.resolve_time(params, api_name)
-    if err:
-        raise ValueError(err)
+    params = dict(payload.get("params") or {})
+    # resolve_time 会先尽力归一化口语说法；实在转不了的才写 _time_parse_failed
+    common.resolve_time(params, api_name)
+    failed = params.pop("_time_parse_failed", None)
+    if failed:
+        if isinstance(failed, list):
+            detail = "、".join("第 %d 笔「%s」" % (f.get("index", 0) + 1, f.get("time", ""))
+                              for f in failed if isinstance(f, dict))
+        else:
+            detail = "「%s」" % (failed,)
+        raise ValueError(
+            "时间无法转换为标准格式：%s。本次未提交任何记账。\n%s" % (detail, common.TIME_FORMAT_HINT))
     return api_name, params
 
 
@@ -121,26 +121,27 @@ def _post(cfg, api_name, params):
 def main(argv):
     if len(argv) < 2 or argv[1] in ("-h", "--help", "help"):
         sys.stderr.write("usage:\n"
-                         "  python call_gateway.py query   # 固定命令，查询类接口（参数走 stdin 固定JSON）\n"
-                         "  python call_gateway.py run     # 固定命令，全部接口（参数走 stdin 固定JSON）\n"
-                         "  # stdin 固定结构：{\"api_name\":\"<接口名>\",\"params\":{...}}\n")
+                         "  python call_gateway.py query   # 固定命令，查询类接口（参数写入当前目录 sui_cache.json）\n"
+                         "  python call_gateway.py run     # 固定命令，全部接口（参数写入当前目录 sui_cache.json）\n"
+                         "  # 参数结构（优先级 sui_cache.json > stdin）：{\"api_name\":\"<接口名>\",\"params\":{...}}\n")
         return 2
 
     cmd = argv[1]
     if cmd not in ("query", "run"):
-        sys.stderr.write("未知命令：%s（只支持 query / run，参数走 stdin）\n" % cmd)
+        sys.stderr.write("未知命令：%s（只支持 query / run，参数写入当前目录 sui_cache.json）\n" % cmd)
         return 2
 
     cfg = common.load_config()
     try:
-        stdin_json = _read_stdin_json()
-        if not stdin_json:
-            stdin_json = _read_cache_json()
+        # 优先级与文档一致：瞬态参数文件 > stdin（stdin 为有界读取兜底，绝不挂起）
+        payload = _read_cache_json()
+        if not payload:
+            payload = _read_stdin_json()
     except ValueError as e:
         sys.stderr.write("参数 JSON 解析失败：%s\n" % e)
         return 2
     try:
-        api_name, params = _dispatch(cmd, stdin_json)
+        api_name, params = _dispatch(cmd, payload)
     except ValueError as e:
         sys.stderr.write("参数错误：%s\n" % e)
         return 2

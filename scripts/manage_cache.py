@@ -90,15 +90,19 @@ def _as_json(text, expected):
 
 
 def _read_stdin():
+    # 交互终端（TTY）要求走命令行参数；管道场景用有界读取
     if sys.stdin.isatty():
         raise _UsageError()
-    return sys.stdin.read()
+    text = common.read_stdin_bounded()
+    if not text.strip():
+        raise ValueError("stdin 未读到数据（请传 JSON 参数，或把 JSON 管道进来再运行）")
+    return text
 
 
 def _try_read_stdin():
     if sys.stdin.isatty():
         return ""
-    return sys.stdin.read()
+    return common.read_stdin_bounded()
 
 
 def _save_books(books):
